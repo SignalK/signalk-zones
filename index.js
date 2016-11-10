@@ -1,5 +1,8 @@
-// const streamBundle = require('../streambundle');
-// const debug = require('debug')('signalk-server:interfaces:setSystemDateTime');
+const signalkSchema = require('signalk-schema')
+
+const relevantKeys = Object.keys(signalkSchema.metadata)
+  .filter(s => s.indexOf('/vessels/*') >= 0)
+  .map(s => s.replace('/vessels/*', '').replace(/\//g,'.').replace(/RegExp/g, '*').substring(1))
 
 module.exports = function(app) {
   var plugin = {
@@ -12,10 +15,10 @@ module.exports = function(app) {
 
   plugin.schema = {
     type: "object",
-    title: "Zones",
     properties: {
       zones: {
         type: "array",
+        title: " ",
         items: {
           type: "object",
           properties: {
@@ -23,7 +26,7 @@ module.exports = function(app) {
               title: "Signal K key",
               type: "string",
               default: "",
-              "enum": ["navigation.courseOverGroundTrue", "navigation.speedThroughWater"]
+              "enum": relevantKeys
             },
             "zones": {
               "type": "array",
