@@ -1,13 +1,13 @@
 const signalkSchema = require('signalk-schema')
+const Bacon = require('baconjs')
 
 const relevantKeys = Object.keys(signalkSchema.metadata)
   .filter(s => s.indexOf('/vessels/*') >= 0)
-  .map(s => s.replace('/vessels/*', '').replace(/\//g,'.').replace(/RegExp/g, '*').substring(1))
+  .map(s => s.replace('/vessels/*', '').replace(/\//g, '.').replace(/RegExp/g, '*').substring(1))
 
 module.exports = function(app) {
-  var plugin = {
-    unsubscribes: []
-  };
+  var plugin = {}
+  var unsubscribes = []
 
   plugin.id = "zones-edit"
   plugin.name = "Edit Zones"
@@ -76,12 +76,59 @@ module.exports = function(app) {
       }
     }
   }
-  plugin.start = function() {
+
+  plugin.start = function(options) {
+    unsubscribes = options.zones.reduce((acc, {
+      key,
+      zones
+    }) => {
+      var stream = app.streambundle.getSelfStream(key)
+      zones.forEach(zone => {
+        var valueTest
+        if(typeof zone.upper != 'undefined') {
+          if(typeof zone.lower != 'undefined') {
+            valueTest = value => value < zone.upper && value > zone.lower
+          } else {
+            valueTest = value => value < zone.upper
+          }
+        } else {
+          valueTest = value => value > zone.upper
+        }
+        if(valueTest) {
+          const inZone = stream.map(value => valueTest(value)).skipDuplicates()
+          acc.push(inZone.onValue(inZone => raiseNotification(key, zone, inZone)))
+        }
+      })
+      return acc
+    }, [])
     return true
   }
 
   plugin.stop = function() {
-    plugin.unsubscribes.forEach(f => f())
+    unsubscribes.forEach(f => f())
+    unsubscribes = []
+  }
+
+  function raiseNotification(key, zone, inZone) {
+    const delta = {
+      context: "vessels." + app.selfId,
+      updates: [
+        {
+          source: {
+            label: "self.notificationhandler"
+          },
+          values: [{
+            path: "notifications." + key,
+            value: inZone ? {
+              state: zone.state,
+              message: zone.message,
+              timestamp: (new Date()).toISOString()
+            } : null
+            }]
+        }
+      ]
+    }
+    app.signalk.addDelta(delta)
   }
 
   return plugin

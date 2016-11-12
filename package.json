@@ -12,6 +12,7 @@
   "author": "teppo.kurki@iki,fi",
   "license": "ISC",
   "dependencies": {
+    "baconjs": "^0.7.88",
     "signalk-schema": "github:signalk/specification"
   }
 }
