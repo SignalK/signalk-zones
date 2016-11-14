@@ -91,22 +91,31 @@ module.exports = function(app) {
     }) => {
       if(active) {
         var stream = app.streambundle.getSelfStream(key)
-        zones.forEach(zone => {
-          var valueTest
+        const tests = zones.map((zone, i) => {
           if(typeof zone.upper != 'undefined') {
             if(typeof zone.lower != 'undefined') {
-              valueTest = value => value < zone.upper && value > zone.lower
+              return value => value < zone.upper && value > zone.lower
             } else {
-              valueTest = value => value < zone.upper
+              return value => value < zone.upper
             }
           } else {
-            valueTest = value => value > zone.upper
-          }
-          if(valueTest) {
-            const inZone = stream.map(value => valueTest(value)).skipDuplicates()
-            acc.push(inZone.onValue(inZone => raiseNotification(key, zone, inZone)))
+            return value => value > zone.upper
           }
         })
+        acc.push(stream.map(value => {
+          return tests.findIndex(test => test(value))
+        }).skipDuplicates().scan([], (zonesChanged, zoneIndex) => {
+          zonesChanged.unshift(zoneIndex)
+          zonesChanged.splice(2)
+          return zonesChanged
+        }).onValue(zonesChanged => {
+          if(zonesChanged.length > 0) {
+            raiseNotification(key, zonesChanged[0], zones, true)
+            if(zonesChanged.length > 1 && zonesChanged[1] >= 0 ) {
+              raiseNotification(key, zonesChanged[1], zones, false)
+            }
+          }
+        }))
       }
       return acc
     }, [])
@@ -118,26 +127,29 @@ module.exports = function(app) {
     unsubscribes = []
   }
 
-  function raiseNotification(key, zone, inZone) {
-    const delta = {
-      context: "vessels." + app.selfId,
-      updates: [
-        {
-          source: {
-            label: "self.notificationhandler"
-          },
-          values: [{
-            path: "notifications." + key,
-            value: {
-              state: inZone ? zone.state : "normal",
-              message: inZone ? zone.message : null,
-              timestamp: (new Date()).toISOString()
-            }
+  function raiseNotification(key, zoneIndex, zones, inZone) {
+    if(zoneIndex >= 0) {
+      const zone = zones[zoneIndex]
+      const delta = {
+        context: "vessels." + app.selfId,
+        updates: [
+          {
+            source: {
+              label: "self.notificationhandler"
+            },
+            values: [{
+              path: "notifications." + key,
+              value: {
+                state: inZone && zoneIndex >= 0 ? zone.state : "normal",
+                message: inZone ? zone.message : null,
+                timestamp: (new Date()).toISOString()
+              }
             }]
         }
       ]
+      }
+      app.signalk.addDelta(delta)
     }
-    app.signalk.addDelta(delta)
   }
 
   return plugin
