@@ -67,6 +67,14 @@ module.exports = function(app) {
                     "enum": ["normal", "alert", "warn", "alarm", "emergency"]
                   },
 
+                  "method": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": ["visual", "sound"]
+                    }
+                  },
+
                   "message": {
                     "id": "message",
                     "type": "string",
@@ -104,17 +112,8 @@ module.exports = function(app) {
         })
         acc.push(stream.map(value => {
           return tests.findIndex(test => test(value))
-        }).skipDuplicates().scan([], (zonesChanged, zoneIndex) => {
-          zonesChanged.unshift(zoneIndex)
-          zonesChanged.splice(2)
-          return zonesChanged
-        }).onValue(zonesChanged => {
-          if(zonesChanged.length > 0) {
-            raiseNotification(key, zonesChanged[0], zones, true)
-            if(zonesChanged.length > 1 && zonesChanged[1] >= 0 ) {
-              raiseNotification(key, zonesChanged[1], zones, false)
-            }
-          }
+        }).skipDuplicates().onValue(zoneIndex => {
+          sendNotificationUpdate(key, zoneIndex, zones)
         }))
       }
       return acc
@@ -127,29 +126,30 @@ module.exports = function(app) {
     unsubscribes = []
   }
 
-  function raiseNotification(key, zoneIndex, zones, inZone) {
+  function sendNotificationUpdate(key, zoneIndex, zones) {
+    var value = null
     if(zoneIndex >= 0) {
-      const zone = zones[zoneIndex]
-      const delta = {
-        context: "vessels." + app.selfId,
-        updates: [
-          {
-            source: {
-              label: "self.notificationhandler"
-            },
-            values: [{
-              path: "notifications." + key,
-              value: {
-                state: inZone && zoneIndex >= 0 ? zone.state : "normal",
-                message: inZone ? zone.message : null,
-                timestamp: (new Date()).toISOString()
-              }
-            }]
+      value = {
+        state: zones[zoneIndex].state,
+        message: zones[zoneIndex].message,
+        timestamp: (new Date()).toISOString()
+      }
+    }
+    const delta = {
+      context: "vessels." + app.selfId,
+      updates: [
+        {
+          source: {
+            label: "self.notificationhandler"
+          },
+          values: [{
+            path: "notifications." + key,
+            value: value
+          }]
         }
       ]
-      }
-      app.signalk.addDelta(delta)
     }
+    app.signalk.addDelta(delta)
   }
 
   return plugin
