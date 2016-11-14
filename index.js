@@ -20,18 +20,24 @@ module.exports = function(app) {
         type: "array",
         title: " ",
         items: {
+          title: "Zones for one Path",
           type: "object",
           properties: {
+            "active": {
+              title: "Active",
+              type: "boolean",
+              default: true
+            },
             "key": {
-              title: "Signal K key",
+              title: "Signal K Path",
               type: "string",
               default: "",
               "enum": relevantKeys
             },
             "zones": {
               "type": "array",
-              "title": "Zones for a Key",
-              "description": "The zones defining the ranges of values for a Signal K key.",
+              "title": " ",
+              "description": "Add one or more zones ",
               "items": {
                 "type": "object",
                 "title": "Zone",
@@ -80,25 +86,28 @@ module.exports = function(app) {
   plugin.start = function(options) {
     unsubscribes = options.zones.reduce((acc, {
       key,
-      zones
+      active,
+      zones,
     }) => {
-      var stream = app.streambundle.getSelfStream(key)
-      zones.forEach(zone => {
-        var valueTest
-        if(typeof zone.upper != 'undefined') {
-          if(typeof zone.lower != 'undefined') {
-            valueTest = value => value < zone.upper && value > zone.lower
+      if(active) {
+        var stream = app.streambundle.getSelfStream(key)
+        zones.forEach(zone => {
+          var valueTest
+          if(typeof zone.upper != 'undefined') {
+            if(typeof zone.lower != 'undefined') {
+              valueTest = value => value < zone.upper && value > zone.lower
+            } else {
+              valueTest = value => value < zone.upper
+            }
           } else {
-            valueTest = value => value < zone.upper
+            valueTest = value => value > zone.upper
           }
-        } else {
-          valueTest = value => value > zone.upper
-        }
-        if(valueTest) {
-          const inZone = stream.map(value => valueTest(value)).skipDuplicates()
-          acc.push(inZone.onValue(inZone => raiseNotification(key, zone, inZone)))
-        }
-      })
+          if(valueTest) {
+            const inZone = stream.map(value => valueTest(value)).skipDuplicates()
+            acc.push(inZone.onValue(inZone => raiseNotification(key, zone, inZone)))
+          }
+        })
+      }
       return acc
     }, [])
     return true
@@ -119,11 +128,11 @@ module.exports = function(app) {
           },
           values: [{
             path: "notifications." + key,
-            value: inZone ? {
-              state: zone.state,
-              message: zone.message,
+            value: {
+              state: inZone ? zone.state : "normal",
+              message: inZone ? zone.message : null,
               timestamp: (new Date()).toISOString()
-            } : null
+            }
             }]
         }
       ]
