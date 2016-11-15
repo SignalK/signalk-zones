@@ -67,6 +67,14 @@ module.exports = function(app) {
                     "enum": ["normal", "alert", "warn", "alarm", "emergency"]
                   },
 
+                  "method": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": ["visual", "sound"]
+                    }
+                  },
+
                   "message": {
                     "id": "message",
                     "type": "string",
@@ -91,22 +99,22 @@ module.exports = function(app) {
     }) => {
       if(active) {
         var stream = app.streambundle.getSelfStream(key)
-        zones.forEach(zone => {
-          var valueTest
+        const tests = zones.map((zone, i) => {
           if(typeof zone.upper != 'undefined') {
             if(typeof zone.lower != 'undefined') {
-              valueTest = value => value < zone.upper && value > zone.lower
+              return value => value < zone.upper && value > zone.lower
             } else {
-              valueTest = value => value < zone.upper
+              return value => value < zone.upper
             }
           } else {
-            valueTest = value => value > zone.upper
-          }
-          if(valueTest) {
-            const inZone = stream.map(value => valueTest(value)).skipDuplicates()
-            acc.push(inZone.onValue(inZone => raiseNotification(key, zone, inZone)))
+            return value => value > zone.upper
           }
         })
+        acc.push(stream.map(value => {
+          return tests.findIndex(test => test(value))
+        }).skipDuplicates().onValue(zoneIndex => {
+          sendNotificationUpdate(key, zoneIndex, zones)
+        }))
       }
       return acc
     }, [])
@@ -118,7 +126,15 @@ module.exports = function(app) {
     unsubscribes = []
   }
 
-  function raiseNotification(key, zone, inZone) {
+  function sendNotificationUpdate(key, zoneIndex, zones) {
+    var value = null
+    if(zoneIndex >= 0) {
+      value = {
+        state: zones[zoneIndex].state,
+        message: zones[zoneIndex].message,
+        timestamp: (new Date()).toISOString()
+      }
+    }
     const delta = {
       context: "vessels." + app.selfId,
       updates: [
@@ -128,12 +144,8 @@ module.exports = function(app) {
           },
           values: [{
             path: "notifications." + key,
-            value: {
-              state: inZone ? zone.state : "normal",
-              message: inZone ? zone.message : null,
-              timestamp: (new Date()).toISOString()
-            }
-            }]
+            value: value
+          }]
         }
       ]
     }
