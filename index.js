@@ -93,7 +93,7 @@ module.exports = function(app) {
   }
 
   plugin.start = function(options) {
-    unsubscribes = options.zones.reduce((acc, {
+    unsubscribes = (options.zones || []).reduce((acc, {
       key,
       active,
       zones,
