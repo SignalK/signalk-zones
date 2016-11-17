@@ -102,7 +102,7 @@ module.exports = function(app) {
         const tests = zones.map((zone, i) => {
           if(typeof zone.upper != 'undefined') {
             if(typeof zone.lower != 'undefined') {
-              return value => value < zone.upper && value > zone.lower
+              return value => value < zone.upper && value >= zone.lower
             } else {
               return value => value < zone.upper
             }
