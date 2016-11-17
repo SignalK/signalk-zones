@@ -72,7 +72,8 @@ module.exports = function(app) {
                     "items": {
                       "type": "string",
                       "enum": ["visual", "sound"]
-                    }
+                    },
+                    default: ["visual", "sound"]
                   },
 
                   "message": {
