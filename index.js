@@ -133,6 +133,7 @@ module.exports = function(app) {
       value = {
         state: zones[zoneIndex].state,
         message: zones[zoneIndex].message,
+        method: zones[zoneIndex].method,
         timestamp: (new Date()).toISOString()
       }
     }
