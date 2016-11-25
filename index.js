@@ -130,10 +130,11 @@ module.exports = function(app) {
   function sendNotificationUpdate(key, zoneIndex, zones) {
     var value = null
     if(zoneIndex >= 0) {
+      const zone = zones[zoneIndex]
       value = {
-        state: zones[zoneIndex].state,
-        message: zones[zoneIndex].message,
-        method: zones[zoneIndex].method,
+        state: zone.state,
+        message: zone.message ||  zone.lower + ' < value < ' + zone.upper,
+        method: zone.method,
         timestamp: (new Date()).toISOString()
       }
     }
