@@ -122,6 +122,46 @@ module.exports = function(app) {
     return true
   }
 
+  plugin.registerWithRouter = function(router) {
+    router.post("/silenceNotification", (req, res) => {
+
+      notification = req.body
+      if ( typeof notification.path == 'undefined' )
+      {
+        debug("invalid request: " + util.inspect(notification, {showHidden: false, depth: 1}))
+        res.status(400)
+        res.send("Invalid Request")
+        return
+      }
+
+      var existing = _.get(app.signalk.self, notification.path)
+      if ( existing.method != null
+           && typeof existing.method != "undefined"
+           && existing.method.indexOf("sound") != -1 )
+        {
+          existing.methods = existing.filter(function(method) { return method != "sound" })
+          existing.timestamp = (new Date()).toISOString()
+          
+          const delta = {
+          context: "vessels." + app.selfId,
+          updates: [
+            {
+            source: {
+              label: "self.notificationhandler"
+            },
+            values: [{
+                path: "notifications." + key,
+                value: existing
+                }]
+            }
+                    ]
+          }
+          app.signalk.addDelta(delta)
+        }
+    })
+  }
+  
+
   plugin.stop = function() {
     unsubscribes.forEach(f => f())
     unsubscribes = []
@@ -137,7 +177,11 @@ module.exports = function(app) {
         method: zone.method,
         timestamp: (new Date()).toISOString()
       }
+          
+      if ( value.state != "normal" )
+        value.method = [ "visual", "sound" ]
     }
+
     const delta = {
       context: "vessels." + app.selfId,
       updates: [
