@@ -1,4 +1,4 @@
-const signalkSchema = require('signalk-schema')
+const signalkSchema = require('@signalk/signalk-schema')
 const Bacon = require('baconjs')
 
 const relevantKeys = Object.keys(signalkSchema.metadata)
