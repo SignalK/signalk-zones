@@ -12,9 +12,9 @@
   "author": "teppo.kurki@iki,fi",
   "license": "ISC",
   "dependencies": {
+    "@signalk/signalk-schema": "0.0.1-6",
     "baconjs": "^0.7.88",
     "express-mung": "^0.4.6",
-    "lodash": "^4.17.2",
-    "signalk-schema": "github:signalk/specification"
+    "lodash": "^4.17.2"
   }
 }
