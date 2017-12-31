@@ -20,7 +20,7 @@ module.exports = function(app) {
         type: "array",
         title: " ",
         items: {
-          title: "Zones for one Path",
+          title: "One Signal K path with zones (zone = upper and lower limit with metadata)",
           type: "object",
           properties: {
             "active": {
@@ -29,7 +29,7 @@ module.exports = function(app) {
               default: true
             },
             "key": {
-              title: "Signal K Path",
+              title: "Path",
               type: "string",
               default: "",
               "enum": relevantKeys
@@ -37,7 +37,7 @@ module.exports = function(app) {
             "zones": {
               "type": "array",
               "title": " ",
-              "description": "Add one or more zones ",
+              "description": "Zones",
               "items": {
                 "type": "object",
                 "title": "Zone",
