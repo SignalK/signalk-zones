@@ -1,6 +1,6 @@
 {
-  "name": "signalk-zones",
-  "version": "0.0.1",
+  "name": "@signalk/zones",
+  "version": "1.0.0",
   "description": "Signal K server plugin to edit zones, which specify ranges for values per key",
   "main": "index.js",
   "scripts": {
@@ -12,7 +12,7 @@
   "author": "teppo.kurki@iki,fi",
   "license": "ISC",
   "dependencies": {
-    "@signalk/signalk-schema": "0.0.1-6",
+    "@signalk/signalk-schema": "1.0.2",
     "baconjs": "^0.7.88"
   }
 }
