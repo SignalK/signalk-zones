@@ -1,9 +1,4 @@
-const signalkSchema = require('@signalk/signalk-schema')
 const Bacon = require('baconjs')
-
-const relevantKeys = Object.keys(signalkSchema.metadata)
-  .filter(s => s.indexOf('/vessels/*') >= 0)
-  .map(s => s.replace('/vessels/*', '').replace(/\//g, '.').replace(/RegExp/g, '*').substring(1)).sort()
 
 module.exports = function(app) {
   var plugin = {}
@@ -31,8 +26,7 @@ module.exports = function(app) {
             "key": {
               title: "Path",
               type: "string",
-              default: "",
-              "enum": relevantKeys
+              default: ""
             },
             "zones": {
               "type": "array",
@@ -108,7 +102,7 @@ module.exports = function(app) {
               return value => value < zone.upper
             }
           } else {
-            return value => value > zone.upper
+            return value => value > zone.lower
           }
         })
         acc.push(stream.map(value => {
