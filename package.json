@@ -12,7 +12,6 @@
   "author": "teppo.kurki@iki,fi",
   "license": "ISC",
   "dependencies": {
-    "@signalk/signalk-schema": "1.0.2",
     "baconjs": "^0.7.88"
   }
 }
